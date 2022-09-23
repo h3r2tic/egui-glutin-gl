@@ -1,0 +1,16 @@
+[package]
+name = "egui-glutin"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+bytemuck = "1.7.2"
+egui = { version = "0.19", features = ["bytemuck"] }
+egui-winit = "0.19"
+gl = "0.14.0"
+glutin = "0.29.0"
+log = "0.4.14"
+memoffset = "0.6"
+puffin = "0.12.1"
