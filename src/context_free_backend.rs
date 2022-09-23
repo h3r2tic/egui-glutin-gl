@@ -8,8 +8,9 @@ use super::painter::Painter;
 // ----------------------------------------------------------------------------
 
 /// Convenience wrapper for using [`egui`] from a [`glutin`] app.
-pub struct EguiBackend {
-    pub egui_ctx: egui::Context,
+///
+/// Use this if you'd rather keep the [`egui::Context`] separate from the backend.
+pub struct EguiContextFreeBackend {
     pub egui_winit: egui_winit::State,
     pub painter: Painter,
 
@@ -19,7 +20,7 @@ pub struct EguiBackend {
 
 type Display = glutin::ContextWrapper<glutin::PossiblyCurrent, glutin::window::Window>;
 
-impl EguiBackend {
+impl EguiContextFreeBackend {
     pub fn new<E>(display: &Display, event_loop: &EventLoopWindowTarget<E>) -> Self {
         let painter = Painter::new();
 
@@ -30,7 +31,6 @@ impl EguiBackend {
         egui_winit.set_pixels_per_point(pixels_per_point);
 
         Self {
-            egui_ctx: Default::default(),
             egui_winit,
             painter,
             shapes: Default::default(),
@@ -38,25 +38,29 @@ impl EguiBackend {
         }
     }
 
-    pub fn on_event(&mut self, event: &WindowEvent<'_>) -> bool {
-        self.egui_winit.on_event(&self.egui_ctx, event)
+    pub fn on_event(&mut self, egui_ctx: &egui::Context, event: &WindowEvent<'_>) -> bool {
+        self.egui_winit.on_event(egui_ctx, event)
     }
 
-    pub fn run(
+    pub fn take_input(&mut self, display: &Display) -> egui::RawInput {
+        self.egui_winit.take_egui_input(display.window())
+    }
+
+    pub fn handle_output(
         &mut self,
+        egui_ctx: &egui::Context,
+        full_output: egui::FullOutput,
         display: &Display,
-        run_ui: impl FnMut(&egui::Context),
     ) -> std::time::Duration {
-        let raw_input = self.egui_winit.take_egui_input(display.window());
         let egui::FullOutput {
             platform_output,
             repaint_after,
             textures_delta,
             shapes,
-        } = self.egui_ctx.run(raw_input, run_ui);
+        } = full_output;
 
         self.egui_winit
-            .handle_platform_output(display.window(), &self.egui_ctx, platform_output);
+            .handle_platform_output(display.window(), egui_ctx, platform_output);
 
         self.shapes = shapes;
         self.textures_delta.append(textures_delta);
@@ -64,13 +68,12 @@ impl EguiBackend {
         repaint_after
     }
 
-    /// Paint the results of the last call to [`Self::run`].
-    pub fn paint(&mut self, display: &Display) {
+    pub fn paint(&mut self, egui_ctx: &egui::Context, display: &Display) {
         let shapes = std::mem::take(&mut self.shapes);
         let textures_delta = std::mem::take(&mut self.textures_delta);
-        let clipped_primitives = self.egui_ctx.tessellate(shapes);
+        let clipped_primitives = egui_ctx.tessellate(shapes);
 
-        let pixels_per_point = self.egui_ctx.pixels_per_point();
+        let pixels_per_point = egui_ctx.pixels_per_point();
         let screen_size_px = display.window().inner_size().into();
 
         self.painter.paint_and_update_textures(
