@@ -546,7 +546,10 @@ impl Painter {
     }
 
     fn assert_not_destroyed(&self) {
-        assert!(!self.destroyed, "the egui glow has already been destroyed!");
+        assert!(
+            !self.destroyed,
+            "the egui-glutin-gl has already been destroyed!"
+        );
     }
 }
 
@@ -593,7 +596,7 @@ impl Drop for Painter {
     fn drop(&mut self) {
         if !self.destroyed {
             log::warn!(
-                "You forgot to call destroy() on the egui glow painter. Resources will leak!"
+                "You forgot to call destroy() on the egui-glutin-gl painter. Resources will leak!"
             );
         }
     }
