@@ -9,7 +9,8 @@ license = "MIT OR Apache-2.0"
 [dependencies]
 bytemuck = "1.7.2"
 egui = { version = "0.19", features = ["bytemuck"] }
-egui-winit = "0.19"
+#egui-winit = { version = "0.19", default-features = false, features = ["clipboard", "links", "wayland"] }
+egui-winit = { path = "vendor/egui-winit", default-features = false, features = ["clipboard", "links", "wayland"] }
 gl = "0.14.0"
 glutin = { version = "0.29", default-features = false, features = ["x11"] }
 log = "0.4.14"
